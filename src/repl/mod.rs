@@ -4,7 +4,7 @@ use std::{
     u8,
 };
 
-use crate::vm::VM;
+use crate::{assembler::program_parsers::program, vm::VM};
 
 pub struct REPL {
     command_buffer: Vec<String>,
@@ -57,23 +57,22 @@ impl REPL {
                     println!("End of Register Listing");
                 }
                 _ => {
-                    let results = self.parse_hex(buffer);
-                    match results {
-                        Ok(bytes) => {
-                            for byte in bytes {
-                                self.vm.add_byte(byte)
-                            }
-                        }
-                        Err(_e) => {
-                            println!("Unable to decode hex string. Please enter 4 groups of 2 hex characters.")
+                    let buffer = buffer.to_lowercase();
+                    let parsed_program = match program(buffer.as_str()) {
+                        Ok((_, result)) => result,
+                        Err(_) => {
+                            println!("Unable to parse input");
+                            continue;
                         }
                     };
-                    self.vm.run_once();
+                    self.vm.program.append(&mut parsed_program.to_bytes());
+                    self.vm.run_once()
                 }
             }
         }
     }
 
+    #[allow(dead_code)]
     fn parse_hex(&mut self, i: &str) -> Result<Vec<u8>, ParseIntError> {
         let split = i.split(" ").collect::<Vec<&str>>();
         let mut results: Vec<u8> = vec![];

@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Opcode {
     LOAD,
     ADD,
@@ -13,34 +13,62 @@ pub enum Opcode {
     NEQ,
     GT,
     LT,
-    GTQ,
-    LTQ,
+    GTE,
+    LTE,
     JEQ,
     JNEQ,
+    ALOC,
     IGL,
 }
 
 impl From<u8> for Opcode {
     fn from(v: u8) -> Self {
         match v {
-            0 => return Opcode::LOAD,
-            1 => return Opcode::ADD,
-            2 => return Opcode::SUB,
-            3 => return Opcode::MUL,
-            4 => return Opcode::DIV,
-            6 => return Opcode::HLT,
-            7 => return Opcode::JMP,
-            8 => return Opcode::JMPF,
-            9 => return Opcode::JMPB,
-            10 => return Opcode::EQ,
-            11 => return Opcode::NEQ,
-            12 => return Opcode::GT,
-            13 => return Opcode::LT,
-            14 => return Opcode::GTQ,
-            15 => return Opcode::LTQ,
-            16 => return Opcode::JEQ,
-            17 => return Opcode::JNEQ,
-            _ => return Opcode::IGL,
+            0 => Opcode::LOAD,
+            1 => Opcode::ADD,
+            2 => Opcode::SUB,
+            3 => Opcode::MUL,
+            4 => Opcode::DIV,
+            6 => Opcode::HLT,
+            7 => Opcode::JMP,
+            8 => Opcode::JMPF,
+            9 => Opcode::JMPB,
+            10 => Opcode::EQ,
+            11 => Opcode::NEQ,
+            12 => Opcode::GT,
+            13 => Opcode::LT,
+            14 => Opcode::GTE,
+            15 => Opcode::LTE,
+            16 => Opcode::JEQ,
+            17 => Opcode::JNEQ,
+            18 => Opcode::ALOC,
+            _ => Opcode::IGL,
+        }
+    }
+}
+
+impl<'a> From<&'a str> for Opcode {
+    fn from(v: &'a str) -> Self {
+        match v {
+            "load" => Opcode::LOAD,
+            "add" => Opcode::ADD,
+            "sub" => Opcode::SUB,
+            "mul" => Opcode::MUL,
+            "div" => Opcode::DIV,
+            "hlt" => Opcode::HLT,
+            "jmp" => Opcode::JMP,
+            "jmpf" => Opcode::JMPF,
+            "jmpb" => Opcode::JMPB,
+            "eq" => Opcode::EQ,
+            "neq" => Opcode::NEQ,
+            "gt" => Opcode::GT,
+            "lt" => Opcode::LT,
+            "gte" => Opcode::GTE,
+            "lte" => Opcode::LTE,
+            "jeq" => Opcode::JEQ,
+            "jneq" => Opcode::JNEQ,
+            "aloc" => Opcode::ALOC,
+            _ => Opcode::IGL,
         }
     }
 }
@@ -70,5 +98,13 @@ mod tests {
     fn test_create_instruction() {
         let instruction = Instruction::new(Opcode::HLT);
         assert_eq!(instruction.opcode, Opcode::HLT);
+    }
+
+    #[test]
+    fn test_str_to_opcode() {
+        let opcode = Opcode::from("load");
+        assert_eq!(opcode, Opcode::LOAD);
+        let opcode = Opcode::from("illegal");
+        assert_eq!(opcode, Opcode::IGL);
     }
 }

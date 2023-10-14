@@ -4,7 +4,8 @@ pub struct VM {
     pub registers: [i32; 32],
     pc: usize,
     pub program: Vec<u8>,
-    remainder: u32,
+    heap: Vec<u8>,
+    remainder: usize,
     equal_flag: bool,
 }
 
@@ -13,6 +14,7 @@ impl VM {
         VM {
             registers: [0; 32],
             program: vec![],
+            heap: vec![],
             pc: 0,
             remainder: 0,
             equal_flag: false,
@@ -34,15 +36,19 @@ impl VM {
         self.program.push(b);
     }
 
+    pub fn add_bytes(&mut self, mut b: Vec<u8>) {
+        self.program.append(&mut b);
+    }
+
     pub fn execute_instructions(&mut self) -> bool {
         if self.pc >= self.program.len() {
-            return false;
+            return true;
         }
 
         match self.decode_opcode() {
             Opcode::LOAD => {
                 let register = self.next_8_bits() as usize;
-                let number = self.next_16_bits() as u16;
+                let number = self.next_16_bits() as u32;
                 self.registers[register] = number as i32;
             }
             Opcode::ADD => {
@@ -64,15 +70,15 @@ impl VM {
                 let register1 = self.registers[self.next_8_bits() as usize];
                 let register2 = self.registers[self.next_8_bits() as usize];
                 self.registers[self.next_8_bits() as usize] = register1 / register2;
-                self.remainder = (register1 % register2) as u32;
+                self.remainder = (register1 % register2) as usize;
             }
             Opcode::HLT => {
                 println!("HLT encountered");
-                return false;
+                return true;
             }
             Opcode::IGL => {
                 println!("Illegal instruction encountered");
-                return false;
+                return true;
             }
             Opcode::JMP => {
                 let target = self.registers[self.next_8_bits() as usize];
@@ -126,7 +132,7 @@ impl VM {
                 }
                 self.next_8_bits();
             }
-            Opcode::GTQ => {
+            Opcode::GTE => {
                 let register1 = self.registers[self.next_8_bits() as usize];
                 let register2 = self.registers[self.next_8_bits() as usize];
                 if register1 >= register2 {
@@ -136,7 +142,7 @@ impl VM {
                 }
                 self.next_8_bits();
             }
-            Opcode::LTQ => {
+            Opcode::LTE => {
                 let register1 = self.registers[self.next_8_bits() as usize];
                 let register2 = self.registers[self.next_8_bits() as usize];
                 if register1 <= register2 {
@@ -158,8 +164,14 @@ impl VM {
                     self.pc = target as usize;
                 }
             }
+            Opcode::ALOC => {
+                let register = self.next_8_bits() as usize;
+                let bytes = self.registers[register];
+                let new_end = self.heap.len() as i32 + bytes;
+                self.heap.resize(new_end as usize, 0);
+            }
         }
-        true
+        false
     }
 
     fn decode_opcode(&mut self) -> Opcode {
@@ -389,5 +401,14 @@ mod tests {
         test_vm.program = vec![17, 0, 0, 0, 6, 0, 0, 0];
         test_vm.run_once();
         assert_eq!(test_vm.pc, 7);
+    }
+
+    #[test]
+    fn test_aloc_opcode() {
+        let mut test_vm = get_test_vm();
+        test_vm.registers[0] = 1024;
+        test_vm.program = vec![18, 0, 0, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.heap.len(), 1024);
     }
 }
