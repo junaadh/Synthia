@@ -6,8 +6,8 @@ use nom::{
 };
 
 use crate::assembler::{
-    label_parsers::label_declaration, opcode_parsers::*, operand_parsers::operand, SymbolTable,
-    Token,
+    directive_parsers::directive, label_parsers::label_declaration, opcode_parsers::*,
+    operand_parsers::operand, SymbolTable, Token,
 };
 
 #[derive(Debug, PartialEq)]
@@ -133,7 +133,7 @@ fn instruction_combined(input: &str) -> IResult<&str, AssemblerInstruction> {
 }
 
 pub fn instruction(input: &str) -> IResult<&str, AssemblerInstruction> {
-    alt((instruction_combined,))(input)
+    alt((instruction_combined, directive))(input)
 }
 
 #[cfg(test)]

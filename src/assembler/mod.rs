@@ -10,8 +10,8 @@ use crate::instruction::Opcode;
 
 use self::program_parsers::{program, Program};
 
-const PIE_HEADER_PREFIX: [u8; 4] = [45, 50, 49, 45];
-const PIE_HEADER_LENGTH: usize = 64;
+pub const PIE_HEADER_PREFIX: [u8; 4] = [45, 50, 49, 45];
+pub const PIE_HEADER_LENGTH: usize = 64;
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
@@ -21,6 +21,7 @@ pub enum Token {
     LabelDeclaration { name: String },
     LabelUsage { name: String },
     Directive { name: String },
+    SyString { name: String },
 }
 
 #[derive(Debug)]
@@ -45,9 +46,13 @@ impl Assembler {
 
     pub fn assemble(&mut self, raw: &str) -> Option<Vec<u8>> {
         match program(raw) {
-            Ok((_remainder, program)) => {
+            Ok((_, program)) => {
+                let mut assembled_program = self.write_pie_heade();
                 self.process_first_phase(&program);
-                Some(self.process_second_phase(&program))
+                let mut body = self.process_second_phase(&program);
+
+                assembled_program.append(&mut body);
+                Some(assembled_program)
             }
             Err(e) => {
                 println!("There was an error assembling the code: {:?}", e);
@@ -172,8 +177,8 @@ mod tests {
             "load $0 #100\nload $1 #1\nload $2 #0\ntest: inc $0\nneq $0 $2\njmpe @test\nhlt";
         let program = asm.assemble(test_string).unwrap();
         let mut vm = VM::new();
-        assert_eq!(program.len(), 28);
+        assert_eq!(program.len(), 93);
         vm.add_bytes(program);
-        assert_eq!(vm.program.len(), 28);
+        assert_eq!(vm.program.len(), 93);
     }
 }

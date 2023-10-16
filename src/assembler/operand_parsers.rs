@@ -1,7 +1,8 @@
 use nom::{
     branch::alt,
-    character::complete::{char, digit1},
+    character::complete::{alphanumeric0, char, digit1},
     combinator::map_res,
+    multi::many0,
     IResult,
 };
 use std::str::FromStr;
@@ -15,8 +16,21 @@ pub fn integer_operand(input: &str) -> IResult<&str, Token> {
     Ok((input, Token::IntegerOperand { value }))
 }
 
+fn systring(input: &str) -> IResult<&str, Token> {
+    let (input, quote) = alt((char('\''), char('"')))(input)?;
+    let (input, content) = (alphanumeric0)(input)?;
+    let (input, _) = char(quote)(input)?;
+
+    Ok((
+        input,
+        Token::SyString {
+            name: content.to_string(),
+        },
+    ))
+}
+
 pub fn operand(input: &str) -> IResult<&str, Token> {
-    alt((integer_operand, register, label_usage))(input)
+    alt((integer_operand, register, label_usage, systring))(input)
 }
 
 #[cfg(test)]
@@ -31,5 +45,17 @@ mod tests {
         assert_ne!(result, Ok(("", Token::IntegerOperand { value: 10 })));
         let result = integer_operand("#a");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_string_single_quotes() {
+        let result = systring("'hello'");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_string_double_quotes() {
+        let result = systring("\"hello\"");
+        assert!(result.is_ok());
     }
 }
