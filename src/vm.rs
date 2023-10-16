@@ -170,6 +170,26 @@ impl VM {
                 let new_end = self.heap.len() as i32 + bytes;
                 self.heap.resize(new_end as usize, 0);
             }
+            Opcode::INC => {
+                let register_number = self.next_8_bits() as usize;
+                self.registers[register_number] += 1;
+                self.next_8_bits();
+                self.next_8_bits();
+            }
+            Opcode::DEC => {
+                let register_number = self.next_8_bits() as usize;
+                self.registers[register_number] -= 1;
+                self.next_8_bits();
+                self.next_8_bits();
+            }
+            Opcode::DJMPE => {
+                let destination = self.next_8_bits();
+                if self.equal_flag {
+                    self.pc = destination as usize;
+                } else {
+                    self.next_8_bits();
+                }
+            }
         }
         false
     }

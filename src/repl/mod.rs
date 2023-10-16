@@ -1,14 +1,20 @@
 use std::{
-    io::{self, Write},
+    fs::File,
+    io::{self, Read, Write},
     num::ParseIntError,
+    path::Path,
     u8,
 };
 
-use crate::{assembler::program_parsers::program, vm::VM};
+use crate::{
+    assembler::{program_parsers::program, Assembler},
+    vm::VM,
+};
 
 pub struct REPL {
     command_buffer: Vec<String>,
     vm: VM,
+    asm: Assembler,
 }
 
 impl REPL {
@@ -16,6 +22,7 @@ impl REPL {
         REPL {
             command_buffer: vec![],
             vm: VM::new(),
+            asm: Assembler::new(),
         }
     }
 
@@ -56,17 +63,50 @@ impl REPL {
                     println!("{:#?}", self.vm.registers);
                     println!("End of Register Listing");
                 }
-                _ => {
-                    let buffer = buffer.to_lowercase();
-                    let parsed_program = match program(buffer.as_str()) {
-                        Ok((_, result)) => result,
-                        Err(_) => {
+                ".clear_program" => {
+                    println!("Removing all bytes from program VM vector... ");
+                    self.vm.program.truncate(0);
+                    println!("Job Done!");
+                }
+                ".load_file" => {
+                    print!("Please enter the path to the file you wish to load: ");
+                    io::stdout().flush().expect("Unable to flush stdout");
+                    let mut tmp = String::new();
+                    stdin
+                        .read_line(&mut tmp)
+                        .expect("Unable to readline from user");
+                    let tmp = tmp.trim();
+                    let filename = Path::new(&tmp);
+                    let mut f = File::open(Path::new(&filename)).expect("File not found");
+                    let mut contents = String::new();
+                    f.read_to_string(&mut contents)
+                        .expect("There was an error reading from the file");
+                    match self.asm.assemble(&contents) {
+                        Some(mut assembled_program) => {
+                            println!("Sending assembled program to VM");
+                            self.vm.program.append(&mut assembled_program);
+                            print!("{:#?}", self.vm.program);
+                            self.vm.run();
+                        }
+                        None => {
                             println!("Unable to parse input");
                             continue;
                         }
+                    }
+                }
+                _ => {
+                    let program = match program(buffer.into()) {
+                        Ok((_remainder, program)) => program,
+                        Err(e) => {
+                            println!("Unable to parse input: {:?}", e);
+                            continue;
+                        }
                     };
-                    self.vm.program.append(&mut parsed_program.to_bytes());
-                    self.vm.run_once()
+
+                    self.vm
+                        .program
+                        .append(&mut program.to_bytes(&self.asm.symbols));
+                    self.vm.run_once();
                 }
             }
         }

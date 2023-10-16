@@ -1,0 +1,9 @@
+name: synthia
+version: "0.0.1"
+author: Moosa Junaadh <junaadh.02@gmail.com>
+about: Interpreter for Synthia
+args:
+    - INPUT_FILE:
+        help: Path to .sasm or .sy file to run
+        required: false
+        index: 1 

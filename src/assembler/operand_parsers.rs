@@ -6,7 +6,7 @@ use nom::{
 };
 use std::str::FromStr;
 
-use crate::assembler::{register_parsers::register, Token};
+use crate::assembler::{label_parsers::label_usage, register_parsers::register, Token};
 
 pub fn integer_operand(input: &str) -> IResult<&str, Token> {
     let (input, _) = char('#')(input)?;
@@ -16,7 +16,7 @@ pub fn integer_operand(input: &str) -> IResult<&str, Token> {
 }
 
 pub fn operand(input: &str) -> IResult<&str, Token> {
-    alt((integer_operand, register))(input)
+    alt((integer_operand, register, label_usage))(input)
 }
 
 #[cfg(test)]
