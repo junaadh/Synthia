@@ -2,7 +2,6 @@ use nom::{
     branch::alt,
     character::complete::{alphanumeric0, char, digit1},
     combinator::map_res,
-    multi::many0,
     IResult,
 };
 use std::str::FromStr;

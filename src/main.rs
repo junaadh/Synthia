@@ -1,4 +1,5 @@
 use clap::{arg, Parser};
+use log::info;
 use std::{fs::File, io::Read, path::Path};
 
 pub mod assembler;
@@ -13,6 +14,8 @@ struct Args {
 }
 
 fn main() {
+    env_logger::init();
+    info!("Starting logging!");
     let args = Args::parse();
     let input_file = args.input_file;
 
@@ -23,12 +26,12 @@ fn main() {
             let mut vm = vm::VM::new();
             let program = asm.assemble(&program);
             match program {
-                Some(p) => {
+                Ok(p) => {
                     vm.add_bytes(p);
                     vm.run();
                     std::process::exit(0);
                 }
-                None => {}
+                Err(_) => {}
             }
         }
         None => start_repl(),

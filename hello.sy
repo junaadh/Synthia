@@ -1,4 +1,8 @@
+.data
+hello: .asciiz "hello"
+.code
 load $0 #100
 load $1 #1
 load $2 #0
+prts @hello
 hlt

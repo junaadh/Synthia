@@ -7,6 +7,7 @@ pub struct VM {
     heap: Vec<u8>,
     remainder: usize,
     equal_flag: bool,
+    pub ro_data: Vec<u8>,
 }
 
 impl VM {
@@ -15,6 +16,7 @@ impl VM {
             registers: [0; 32],
             program: vec![],
             heap: vec![],
+            ro_data: vec![],
             pc: 0,
             remainder: 0,
             equal_flag: false,
@@ -195,6 +197,29 @@ impl VM {
                     self.next_8_bits();
                 }
             }
+            Opcode::NOP => {
+                self.next_8_bits();
+                self.next_8_bits();
+                self.next_8_bits();
+            }
+            Opcode::PRTS => {
+                let starting_point = self.next_16_bits() as usize;
+                let mut ending_offset = starting_point;
+                let slice = self.ro_data.as_slice();
+
+                while slice[ending_offset] != 0 {
+                    ending_offset += 1;
+                }
+                let result = std::str::from_utf8(&slice[starting_point..ending_offset]);
+                match result {
+                    Ok(s) => {
+                        print!("{}", s);
+                    }
+                    Err(e) => {
+                        println!("Error decoding string for prts instruction: {:#?}", e)
+                    }
+                };
+            }
         }
         false
     }
@@ -218,7 +243,7 @@ impl VM {
     }
 
     fn verify_header(&self) -> bool {
-        println!("{:?}", self.program);
+        // println!("{:?}", self.program);
         if self.program[0..4] != PIE_HEADER_PREFIX {
             return false;
         }
@@ -228,6 +253,8 @@ impl VM {
 
 #[cfg(test)]
 mod tests {
+    use std::io::Write;
+
     use crate::assembler::PIE_HEADER_LENGTH;
 
     use super::*;
@@ -475,5 +502,20 @@ mod tests {
         test_vm.program = prepend_header(test_vm.program);
         test_vm.run_once();
         assert_eq!(test_vm.heap.len(), 1024);
+    }
+
+    #[test]
+    fn test_prts_opcode() {
+        let mut test_vm = get_test_vm();
+        test_vm.pc = 5;
+        test_vm.ro_data.append(&mut vec![72, 101, 108, 108, 111, 0]);
+        test_vm.program = vec![23, 0, 0, 0];
+        let mut output_buffer = Vec::new();
+        let _ = std::io::stdout().lock().write_all(&mut output_buffer);
+        let _ = std::io::stdout().lock().flush();
+        test_vm.run_once();
+        let output_str = std::str::from_utf8(&output_buffer).expect("Invalid output buffer");
+        println!("{:?} test", &output_buffer);
+        assert_eq!(output_str, "Hello");
     }
 }
